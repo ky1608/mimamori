@@ -49,15 +49,21 @@ function callDelayMs(): number {
   return jitterMin * 60 * 1000;
 }
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://web-henna-nine-23.vercel.app";
+
 async function placeCall(user: User): Promise<void> {
-  // TODO: Twilio × Grok Voice API で実際の発信処理に差し替える
   console.log(`[scheduler] 📞 発信: ${user.parent_name}（${user.parent_phone}）`);
 
-  // 将来の実装例:
-  // await fetch("/api/call/initiate", {
-  //   method: "POST",
-  //   body: JSON.stringify({ userId: user.id, phone: user.parent_phone }),
-  // });
+  const res = await fetch(`${BASE_URL}/api/call`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: user.id }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    console.error(`[scheduler] 発信失敗 ${user.parent_name}:`, err);
+  }
 }
 
 export async function GET(req: NextRequest) {
