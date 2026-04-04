@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 type UserProfile = {
@@ -90,6 +90,8 @@ const formatDate = (dateStr: string) => {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const paymentSuccess = searchParams.get("payment") === "success";
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [linkCode, setLinkCode] = useState<string | null>(null);
@@ -179,6 +181,17 @@ export default function DashboardPage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-5 py-8 space-y-6">
+
+        {/* 決済完了バナー */}
+        {paymentSuccess && (
+          <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 flex items-start gap-3">
+            <span className="text-2xl">🎉</span>
+            <div>
+              <p className="font-bold text-green-800 text-sm">ご登録ありがとうございます！</p>
+              <p className="text-green-600 text-xs mt-0.5">決済が完了しました。翌朝から見守り電話がスタートします。</p>
+            </div>
+          </div>
+        )}
 
         {/* 2. 今日のレポートカード */}
         <section>

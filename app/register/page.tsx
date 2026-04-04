@@ -178,7 +178,21 @@ export default function RegisterPage() {
       return;
     }
 
-    setStep(5);
+    // Stripe Checkout セッションを作成して遷移
+    const stripeRes = await fetch("/api/stripe/create-subscription", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.id, email: form.email }),
+    });
+
+    const stripeData = await stripeRes.json();
+    if (!stripeRes.ok || !stripeData.url) {
+      setAuthError("決済画面の準備に失敗しました。もう一度お試しください。");
+      setLoading(false);
+      return;
+    }
+
+    window.location.href = stripeData.url;
   };
 
   const back = () => setStep((s) => s - 1);
