@@ -17,44 +17,70 @@ function verifySignature(body: string, signature: string): boolean {
   return hash === signature;
 }
 
+// LINE の接続確認用 GET リクエストに応答
+export async function GET() {
+  return NextResponse.json({ ok: true });
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const signature = req.headers.get("x-line-signature") ?? "";
 
+  console.log("[line-webhook] received body:", rawBody);
+  console.log("[line-webhook] signature:", signature);
+
   if (!verifySignature(rawBody, signature)) {
+    console.error("[line-webhook] 署名検証失敗");
     return NextResponse.json({ error: "署名が不正です" }, { status: 401 });
   }
 
   const body = JSON.parse(rawBody);
   const events = body.events ?? [];
 
+  // LINEの接続確認（eventsが空の場合）
+  if (events.length === 0) {
+    console.log("[line-webhook] 接続確認リクエスト（events空）");
+    return NextResponse.json({ ok: true });
+  }
+
   for (const event of events) {
+    console.log("[line-webhook] event type:", event.type);
+
     // テキストメッセージのみ処理
     if (event.type !== "message" || event.message.type !== "text") continue;
 
     const lineUserId: string = event.source.userId;
     const text: string = event.message.text.trim();
 
+    console.log("[line-webhook] received text:", text, "from:", lineUserId);
+
     // 6桁の数字かチェック
-    if (!/^\d{6}$/.test(text)) continue;
+    if (!/^\d{6}$/.test(text)) {
+      console.log("[line-webhook] 6桁コードではないためスキップ");
+      continue;
+    }
 
     // 連携コードでユーザーを検索
-    const { data: user } = await supabase
+    const { data: user, error: findError } = await supabase
       .from("users")
       .select("id")
       .eq("line_link_code", text)
       .single();
 
+    console.log("[line-webhook] user found:", user, "error:", findError);
+
     if (!user) continue;
 
     // line_user_id を保存してコードをクリア
-    await supabase
+    const { error: updateError } = await supabase
       .from("users")
       .update({ line_user_id: lineUserId, line_link_code: null })
       .eq("id", user.id);
 
+    console.log("[line-webhook] update error:", updateError);
+
     // 連携完了メッセージを返信
-    await fetch("https://api.line.me/v2/bot/message/reply", {
+    const replyRes = await fetch("https://api.line.me/v2/bot/message/reply", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -70,6 +96,8 @@ export async function POST(req: NextRequest) {
         ],
       }),
     });
+
+    console.log("[line-webhook] reply status:", replyRes.status);
   }
 
   return NextResponse.json({ ok: true });
