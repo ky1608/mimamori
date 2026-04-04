@@ -14,16 +14,14 @@ type User = {
   call_frequency: string;
 };
 
-// call_time（"08:00"）と現在時刻が±15分以内かチェック
-function isCallTime(callTime: string, nowJst: Date): boolean {
+// call_time（"08:00"）まで何ミリ秒後かを返す（過去の場合は0）
+function msUntilCallTime(callTime: string, nowJst: Date): number {
   const [h, m] = callTime.split(":").map(Number);
   const scheduled = new Date(nowJst);
   scheduled.setHours(h, m, 0, 0);
 
-  const diffMs = Math.abs(nowJst.getTime() - scheduled.getTime());
-  const diffMin = diffMs / 1000 / 60;
-
-  return diffMin <= 5; // cronが5分おきなので±5分以内でマッチ
+  const diff = scheduled.getTime() - nowJst.getTime();
+  return Math.max(diff, 0);
 }
 
 // 曜日フィルタ
@@ -99,20 +97,13 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
-    // 発信時刻と現在時刻が一致するかチェック
-    if (!isCallTime(user.call_time, nowJst)) {
-      skipped.push(user.parent_name);
-      continue;
-    }
+    // call_time までの待機時間 + ±15分のランダムジッター
+    const baseDelay = msUntilCallTime(user.call_time, nowJst);
+    const jitter = callDelayMs();
+    const totalDelay = Math.max(baseDelay + jitter, 0);
 
-    // ±15分のランダム遅延をかけて発信
-    const delay = callDelayMs();
-    if (delay > 0) {
-      setTimeout(() => placeCall(user), delay);
-      console.log(`[scheduler] ${user.parent_name}: ${Math.round(delay / 60000)}分後に発信予約`);
-    } else {
-      await placeCall(user);
-    }
+    setTimeout(() => placeCall(user), totalDelay);
+    console.log(`[scheduler] ${user.parent_name}: ${Math.round(totalDelay / 60000)}分後に発信予約（call_time: ${user.call_time}）`);
 
     targets.push(user.parent_name);
   }
