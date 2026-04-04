@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -88,7 +88,7 @@ const formatDate = (dateStr: string) => {
   return `${d.getMonth() + 1}月${d.getDate()}日（${"日月火水木金土"[d.getDay()]}）`;
 };
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const paymentSuccess = searchParams.get("payment") === "success";
@@ -316,5 +316,17 @@ export default function DashboardPage() {
         </p>
       </main>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#FFFDF9] flex items-center justify-center">
+        <p className="text-gray-400 text-sm">読み込み中...</p>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }
