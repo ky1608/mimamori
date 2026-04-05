@@ -19,26 +19,20 @@ export async function POST(req: NextRequest) {
     .eq("id", userId)
     .single();
 
-  const parentName     = user?.parent_name     ?? "お客様";
-  const conditions     = user?.conditions      ?? "特になし";
-  const familyInfo     = user?.family_info     ?? "特になし";
-  const lastConversation = user?.last_conversation ?? "初回のお電話です";
+  const fullName = user?.parent_name ?? "お客様";
+
+  // 姓名から名前（下の名前）を抽出
+  // 例: "田中 花子" → "花子", "花子" → "花子"
+  const firstName = fullName.includes(" ")
+    ? fullName.split(" ").slice(1).join(" ").trim()
+    : fullName;
 
   const systemPrompt = [
-    `あなたは${parentName}さんの話し相手です。`,
-    `毎朝電話して体調を確認する、温かく親しみやすいアシスタントです。`,
-    ``,
-    `【${parentName}さんについて】`,
-    `・持病・気になること：${conditions}`,
-    `・家族情報：${familyInfo}`,
-    `・前回の会話：${lastConversation}`,
-    ``,
-    `【会話のルール】`,
-    `・最初に「おはようございます、${parentName}さん。今日のご様子はいかがですか？」と挨拶する`,
-    `・体調・睡眠・食欲・痛みを自然な会話の中で確認する`,
-    `・前回の話題を踏まえて自然につなげる`,
-    `・5〜8分程度で終わらせる`,
-    `・日本語のみで話す`,
+    `あなたは高齢者の話し相手です。`,
+    `電話がつながったら必ず最初に`,
+    `「おはようございます、${firstName}さん。今日のお体の具合はいかがですか？」`,
+    `と話しかけてください。`,
+    `温かく、ゆっくり、はっきり話してください。`,
   ].join("\n");
 
   // Grok Voice API との WebSocket 接続を指示する TwiML
