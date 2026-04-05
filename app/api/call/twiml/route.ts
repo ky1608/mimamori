@@ -35,13 +35,11 @@ export async function POST(req: NextRequest) {
   ].join("\n");
 
   // Grok Voice API との WebSocket 接続を指示する TwiML
+  // systemPromptはws-server内にハードコード済みのためURLには含めない
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
-    <Stream url="${WS_SERVER_URL}/stream">
-      <Parameter name="userId" value="${userId}" />
-      <Parameter name="systemPrompt" value="${encodeURIComponent(systemPrompt)}" />
-    </Stream>
+    <Stream url="${WS_SERVER_URL}/stream?userId=${encodeURIComponent(userId)}" />
   </Connect>
 </Response>`;
 
