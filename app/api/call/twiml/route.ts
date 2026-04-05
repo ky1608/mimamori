@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
 <Response>
   <Connect>
     <Stream url="${WS_SERVER_URL}/stream?userId=${encodeURIComponent(userId)}">
+      <Parameter name="userId" value="${userId}" />
       <Parameter name="lastConversation" value="${lastConversation.replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}" />
     </Stream>
   </Connect>
