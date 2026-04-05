@@ -12,35 +12,25 @@ export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get("userId") ?? "";
 
-  // ユーザー情報を取得してsystem promptを構築
+  // ユーザー情報と前回の会話メモを取得
   const { data: user } = await supabase
     .from("users")
-    .select("parent_first_name, parent_name")
+    .select("parent_first_name, parent_name, last_conversation")
     .eq("id", userId)
     .single();
 
-  // parent_first_name が登録済みならそちらを優先、なければ parent_name から推定
-  const firstName = user?.parent_first_name
-    ?? (user?.parent_name?.includes(" ")
-        ? user.parent_name.split(" ").slice(1).join(" ").trim()
-        : user?.parent_name)
-    ?? "お客様";
+  const lastConversation = user?.last_conversation ?? "";
 
-  const systemPrompt = [
-    `あなたは高齢者の話し相手です。`,
-    `電話がつながったら必ず最初に`,
-    `「おはようございます、${firstName}さん。今日のお体の具合はいかがですか？」`,
-    `と話しかけてください。`,
-    `温かく、ゆっくり、はっきり話してください。`,
-  ].join("\n");
+  // userIdとlast_conversationをURLパラメータで渡す
+  const streamUrl = `${WS_SERVER_URL}/stream?userId=${encodeURIComponent(userId)}&lastConversation=${encodeURIComponent(lastConversation)}`;
 
   // Grok Voice API との WebSocket 接続を指示する TwiML
-  // userIdをURLとcustomParameters両方で渡す（Twilioの挙動に依らず確実に取得するため）
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
-    <Stream url="${WS_SERVER_URL}/stream?userId=${encodeURIComponent(userId)}">
+    <Stream url="${streamUrl}">
       <Parameter name="userId" value="${userId}" />
+      <Parameter name="lastConversation" value="${lastConversation.replace(/"/g, "&quot;")}" />
     </Stream>
   </Connect>
 </Response>`;
