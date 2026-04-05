@@ -9,7 +9,8 @@ type FormData = {
   password: string;
   passwordConfirm: string;
   // STEP2
-  parentName: string;
+  parentLastName: string;
+  parentFirstName: string;
   parentAge: string;
   parentPhone: string;
   conditions: string;
@@ -28,7 +29,8 @@ const initialData: FormData = {
   email: "",
   password: "",
   passwordConfirm: "",
-  parentName: "",
+  parentLastName: "",
+  parentFirstName: "",
   parentAge: "",
   parentPhone: "",
   conditions: "",
@@ -98,7 +100,8 @@ export default function RegisterPage() {
 
   const validateStep2 = () => {
     const e: Partial<FormData> = {};
-    if (!form.parentName) e.parentName = "名前を入力してください";
+    if (!form.parentLastName) e.parentLastName = "苗字を入力してください";
+    if (!form.parentFirstName) e.parentFirstName = "名前を入力してください";
     if (!form.parentAge) e.parentAge = "年齢を入力してください";
     else if (isNaN(Number(form.parentAge)) || Number(form.parentAge) < 1) e.parentAge = "正しい年齢を入力してください";
     if (!form.parentPhone) e.parentPhone = "電話番号を入力してください";
@@ -158,7 +161,9 @@ export default function RegisterPage() {
     const { error: insertError } = await supabase.from("users").insert({
       id: user.id,
       email: form.email,
-      parent_name: form.parentName,
+      parent_name: `${form.parentLastName} ${form.parentFirstName}`.trim(),
+      parent_last_name: form.parentLastName,
+      parent_first_name: form.parentFirstName,
       parent_age: Number(form.parentAge),
       parent_phone: form.parentPhone,
       conditions: form.conditions || null,
@@ -304,19 +309,35 @@ export default function RegisterPage() {
             <h1 className="text-2xl font-bold text-gray-800 mb-2">親の情報を入力する</h1>
             <p className="text-gray-400 text-sm mb-8">電話をかけるご両親の情報を入力してください。</p>
             <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  名前 <span className="text-orange-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.parentName}
-                  onChange={(e) => set("parentName", e.target.value)}
-                  placeholder="例：田中 花子"
-                  className={`w-full border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-300 transition
-                    ${errors.parentName ? "border-red-400" : "border-gray-200"}`}
-                />
-                {errors.parentName && <p className="text-red-400 text-xs mt-1">{errors.parentName}</p>}
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    苗字 <span className="text-orange-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.parentLastName}
+                    onChange={(e) => set("parentLastName", e.target.value)}
+                    placeholder="例：田中"
+                    className={`w-full border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-300 transition
+                      ${errors.parentLastName ? "border-red-400" : "border-gray-200"}`}
+                  />
+                  {errors.parentLastName && <p className="text-red-400 text-xs mt-1">{errors.parentLastName}</p>}
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    名前 <span className="text-orange-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.parentFirstName}
+                    onChange={(e) => set("parentFirstName", e.target.value)}
+                    placeholder="例：花子"
+                    className={`w-full border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-300 transition
+                      ${errors.parentFirstName ? "border-red-400" : "border-gray-200"}`}
+                  />
+                  {errors.parentFirstName && <p className="text-red-400 text-xs mt-1">{errors.parentFirstName}</p>}
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -491,7 +512,7 @@ export default function RegisterPage() {
                 <dl className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <dt className="text-gray-400">名前</dt>
-                    <dd className="text-gray-800 font-medium">{form.parentName}</dd>
+                    <dd className="text-gray-800 font-medium">{form.parentLastName} {form.parentFirstName}</dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-gray-400">年齢</dt>
@@ -579,7 +600,7 @@ export default function RegisterPage() {
             <div className="text-5xl mb-6">🎉</div>
             <h1 className="text-2xl font-bold text-gray-800 mb-3">登録が完了しました</h1>
             <p className="text-gray-500 leading-relaxed mb-8">
-              翌朝から、{form.parentName}さんへの電話がスタートします。<br />
+              翌朝から、{form.parentLastName} {form.parentFirstName}さんへの電話がスタートします。<br />
               結果はLINEでお届けします。
             </p>
             <a

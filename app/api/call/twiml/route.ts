@@ -15,17 +15,16 @@ export async function POST(req: NextRequest) {
   // ユーザー情報を取得してsystem promptを構築
   const { data: user } = await supabase
     .from("users")
-    .select("parent_name, conditions, family_info, last_conversation")
+    .select("parent_first_name, parent_name")
     .eq("id", userId)
     .single();
 
-  const fullName = user?.parent_name ?? "お客様";
-
-  // 姓名から名前（下の名前）を抽出
-  // 例: "田中 花子" → "花子", "花子" → "花子"
-  const firstName = fullName.includes(" ")
-    ? fullName.split(" ").slice(1).join(" ").trim()
-    : fullName;
+  // parent_first_name が登録済みならそちらを優先、なければ parent_name から推定
+  const firstName = user?.parent_first_name
+    ?? (user?.parent_name?.includes(" ")
+        ? user.parent_name.split(" ").slice(1).join(" ").trim()
+        : user?.parent_name)
+    ?? "お客様";
 
   const systemPrompt = [
     `あなたは高齢者の話し相手です。`,
