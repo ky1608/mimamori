@@ -53,65 +53,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // 通話完了：conversations テーブルから raw_log を取得して要約
-  // raw_log は WebSocket サーバー側が保存する
-  const { data: conversation } = await supabase
-    .from("conversations")
-    .select("id, user_id, raw_log")
-    .eq("call_sid", callSid)
-    .single();
-
-  if (!conversation?.raw_log) {
-    console.log(`[call/status] raw_log未保存のためスキップ（SID: ${callSid}）`);
-    return NextResponse.json({ ok: true });
-  }
-
-  // 要約APIを呼ぶ
-  const summarizeRes = await fetch(`${BASE_URL}/api/summarize`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      userId: conversation.user_id,
-      rawLog: conversation.raw_log,
-      calledAt: new Date().toISOString(),
-    }),
-  });
-
-  if (!summarizeRes.ok) {
-    console.error("[call/status] 要約失敗");
-    return NextResponse.json({ ok: true });
-  }
-
-  const { summary, score, concern } = await summarizeRes.json();
-
-  // LINEに送信
-  const { data: user } = await supabase
-    .from("users")
-    .select("parent_name, line_user_id")
-    .eq("id", conversation.user_id)
-    .single();
-
-  if (user?.line_user_id) {
-    const callTime = new Date().toLocaleTimeString("ja-JP", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "Asia/Tokyo",
-    });
-
-    await fetch(`${BASE_URL}/api/line-notify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        lineUserId: user.line_user_id,
-        parentName: user.parent_name,
-        score: score === "良い" ? "good" : score === "注意" ? "caution" : "normal",
-        summary: concern !== "特になし" ? `${summary}\n\n⚠️ 気になる点：${concern}` : summary,
-        callTime,
-      }),
-    });
-
-    console.log(`[call/status] LINEレポート送信完了: ${user.parent_name}`);
-  }
-
+  // 通話完了：要約・LINE通知はws-serverが担当するためここではスキップ
+  console.log(`[call/status] 通話完了 SID=${callSid} duration=${duration}s（要約はws-serverが処理）`);
   return NextResponse.json({ ok: true });
 }

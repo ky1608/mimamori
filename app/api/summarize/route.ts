@@ -57,7 +57,7 @@ ${rawLog}
 }
 
 export async function POST(req: NextRequest) {
-  let body: { userId: string; rawLog: string; calledAt?: string };
+  let body: { userId: string; rawLog: string; calledAt?: string; callSid?: string };
 
   try {
     body = await req.json();
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "リクエストボディが不正です" }, { status: 400 });
   }
 
-  const { userId, rawLog, calledAt } = body;
+  const { userId, rawLog, calledAt, callSid } = body;
 
   if (!userId || !rawLog) {
     return NextResponse.json({ error: "userId と rawLog は必須です" }, { status: 400 });
@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
       concern,
       raw_log: rawLog,
       called_at: calledAtTs,
+      ...(callSid ? { call_sid: callSid } : {}),
     });
 
   if (insertError) {
