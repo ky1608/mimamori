@@ -39,11 +39,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "ユーザーが見つかりません" }, { status: 404 });
   }
 
-  console.log(`[call] 発信開始: ${user.parent_name}（${user.parent_phone}）`);
+  // 日本の電話番号を E.164 形式に変換（例: 08012345678 → +818012345678）
+  const toE164 = (phone: string): string => {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.startsWith("0")) return "+81" + digits.slice(1);
+    if (digits.startsWith("81")) return "+" + digits;
+    return "+" + digits;
+  };
+  const toPhone = toE164(user.parent_phone);
+
+  console.log(`[call] 発信開始: ${user.parent_name}（${toPhone}）`);
 
   try {
     const call = await twilioClient.calls.create({
-      to: user.parent_phone,
+      to: toPhone,
       from: process.env.TWILIO_PHONE_NUMBER!,
       // 電話がつながったときのTwiML URLにuserIdを渡す
       url: `${BASE_URL}/api/call/twiml?userId=${userId}`,
