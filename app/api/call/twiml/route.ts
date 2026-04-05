@@ -12,14 +12,18 @@ export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get("userId") ?? "";
 
-  // ユーザー情報と前回の会話メモを取得
-  const { data: user } = await supabase
-    .from("users")
-    .select("parent_first_name, parent_name, last_conversation")
-    .eq("id", userId)
-    .single();
-
-  const lastConversation = user?.last_conversation ?? "";
+  // ユーザー情報と前回の会話メモを取得（エラー時はlast_conversationなしで続行）
+  let lastConversation = "";
+  try {
+    const { data: user } = await supabase
+      .from("users")
+      .select("last_conversation")
+      .eq("id", userId)
+      .single();
+    lastConversation = user?.last_conversation ?? "";
+  } catch (e) {
+    console.error("[twiml] Supabase取得エラー（無視して続行）:", e);
+  }
 
   // userIdとlast_conversationをURLパラメータで渡す
   const streamUrl = `${WS_SERVER_URL}/stream?userId=${encodeURIComponent(userId)}&lastConversation=${encodeURIComponent(lastConversation)}`;
