@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   };
   const toPhone = toE164(user.parent_phone);
 
-  const needsConsentCall = user.consent_service !== true;
+  const needsConsentCall = user.consent_service === false;
   console.log(
     `[call] 発信開始: ${user.parent_name}（${toPhone}） consentFlow=${needsConsentCall}`,
   );
