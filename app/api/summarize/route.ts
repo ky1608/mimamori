@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 type Score = "良い" | "普通" | "注意";
 
@@ -82,6 +77,8 @@ export async function POST(req: NextRequest) {
 
   const { summary, score, concern } = result;
   const calledAtTs = calledAt ?? new Date().toISOString();
+
+  const supabase = createSupabaseAdmin();
 
   // ② usersテーブルの last_conversation を更新
   const { error: userUpdateError } = await supabase
