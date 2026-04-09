@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const raw = user?.last_conversation ?? "";
     // 200文字に切り詰め
     lastConversation = raw.length > 200 ? raw.slice(0, 200) : raw;
-    consentFlow = user?.consent_service === false;
+    consentFlow = user?.consent_service !== true;
   } catch (e) {
     console.error("[twiml] Supabase取得エラー（無視して続行）:", e);
   }
