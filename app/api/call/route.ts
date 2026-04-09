@@ -7,19 +7,12 @@ const twilioClient = twilio(
   process.env.TWILIO_AUTH_TOKEN!
 );
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://web-henna-nine-23.vercel.app";
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-function recordingCallbackUrl(userId: string, consentFlow: boolean): string {
-  const u = new URL(`${BASE_URL}/api/call/recording`);
-  u.searchParams.set("userId", userId);
-  u.searchParams.set("consentFlow", consentFlow ? "1" : "0");
-  return u.toString();
-}
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://web-henna-nine-23.vercel.app";
 
 export async function POST(req: NextRequest) {
   let body: { userId: string };
@@ -38,7 +31,7 @@ export async function POST(req: NextRequest) {
   // ユーザー情報を取得
   const { data: user, error } = await supabase
     .from("users")
-    .select("parent_name, parent_phone, conditions, family_info, last_conversation, consent_service")
+    .select("parent_name, parent_phone, conditions, family_info, last_conversation")
     .eq("id", userId)
     .single();
 
@@ -55,10 +48,7 @@ export async function POST(req: NextRequest) {
   };
   const toPhone = toE164(user.parent_phone);
 
-  const needsConsentCall = user.consent_service === false;
-  console.log(
-    `[call] 発信開始: ${user.parent_name}（${toPhone}） consentFlow=${needsConsentCall}`,
-  );
+  console.log(`[call] 発信開始: ${user.parent_name}（${toPhone}）`);
 
   try {
     const call = await twilioClient.calls.create({
@@ -66,11 +56,6 @@ export async function POST(req: NextRequest) {
       from: process.env.TWILIO_PHONE_NUMBER!,
       // 電話がつながったときのTwiML URLにuserIdを渡す
       url: `${BASE_URL}/api/call/twiml?userId=${userId}`,
-      // 通話録音（同意取得時は録音URLを保存）
-      record: true,
-      recordingStatusCallback: recordingCallbackUrl(userId, needsConsentCall),
-      recordingStatusCallbackMethod: "POST",
-      recordingStatusCallbackEvent: ["completed"],
       // 通話終了時のステータスコールバック
       statusCallback: `${BASE_URL}/api/call/status`,
       statusCallbackMethod: "POST",
